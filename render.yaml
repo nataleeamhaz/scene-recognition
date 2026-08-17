@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: room-design-recommender
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.6
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: PINTEREST_ACCESS_TOKEN
+        sync: false
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "10"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "3600"

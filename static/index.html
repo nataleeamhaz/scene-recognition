@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Design Recommender</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f4f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle { color: #666; margin-bottom: 2rem; font-size: 0.95rem; }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #fff;
+      position: relative;
+    }
+    .upload-zone.dragover { border-color: #5b4cdb; background: #f0eeff; }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .upload-zone p { color: #888; font-size: 0.9rem; }
+
+    #preview-wrap { margin-top: 1rem; display: none; }
+    #preview-wrap img {
+      max-height: 280px; max-width: 100%; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+
+    /* Prompt + button */
+    .prompt-row { margin-top: 1.25rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+    textarea {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { outline: none; border-color: #5b4cdb; }
+
+    button#analyze-btn {
+      padding: 0.75rem 1.5rem;
+      background: #5b4cdb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    button#analyze-btn:hover { background: #4a3cc7; }
+    button#analyze-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      margin: 2rem auto;
+      width: 40px; height: 40px;
+      border: 4px solid #e0e0e0;
+      border-top-color: #5b4cdb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Results */
+    #results { margin-top: 2.5rem; display: none; }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #888;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Furniture chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.75rem; }
+    .chip {
+      background: #fff;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.85rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .chip .conf {
+      background: #5b4cdb20;
+      color: #5b4cdb;
+      border-radius: 10px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Style card */
+    .style-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .style-card .meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge {
+      background: #5b4cdb;
+      color: #fff;
+      border-radius: 20px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .badge.mood { background: #2bab6f; }
+
+    .colors { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .swatch {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.82rem; color: #555;
+    }
+    .swatch-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+
+    .strengths {
+      font-size: 0.9rem; color: #444; margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border-left: 3px solid #5b4cdb;
+    }
+
+    .recs ol { padding-left: 1.25rem; }
+    .recs li { font-size: 0.9rem; color: #333; margin-bottom: 0.4rem; line-height: 1.5; }
+
+    /* Pinterest grid */
+    .pin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .pin-card {
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: block;
+    }
+    .pin-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
+    .pin-card img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; }
+    .pin-card .pin-title {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.8rem;
+      color: #555;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .no-pins { color: #999; font-size: 0.9rem; }
+
+    /* Error */
+    .error-box {
+      background: #fff0f0; border: 1.5px solid #f5c0c0;
+      border-radius: 8px; padding: 1rem 1.25rem;
+      color: #c0392b; font-size: 0.9rem; margin-top: 1.5rem;
+      display: none;
+    }
+
+    /* Quality warnings */
+    .quality-warning-box {
+      background: #fffaf0; border: 1.5px solid #f0dca0;
+      border-radius: 8px; padding: 1rem 1.25rem;
+      color: #8a6d1f; font-size: 0.9rem; margin-bottom: 1.75rem;
+      display: none;
+    }
+    .quality-warning-box ul { padding-left: 1.25rem; margin-top: 0.4rem; }
+    .quality-warning-box li { margin-bottom: 0.25rem; line-height: 1.4; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Room Design Recommender</h1>
+  <p class="subtitle">Upload a photo of your room and describe your design goal to get AI-powered recommendations.</p>
+
+  <!-- Upload -->
+  <div class="upload-zone" id="drop-zone">
+    <input type="file" id="file-input" accept="image/*" />
+    <div class="upload-icon">🏠</div>
+    <p><strong>Drop an image here</strong> or click to browse</p>
+    <p>JPG, PNG, WEBP supported</p>
+  </div>
+  <div id="preview-wrap">
+    <img id="preview-img" src="" alt="Preview" />
+  </div>
+
+  <!-- Prompt -->
+  <div class="prompt-row">
+    <textarea id="prompt-input" placeholder="Describe your design goal… e.g. 'cozy modern bedroom with warm tones'"></textarea>
+    <button id="analyze-btn" disabled>Analyze</button>
+  </div>
+
+  <div class="spinner" id="spinner"></div>
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Results -->
+  <div id="results">
+    <!-- Quality warnings -->
+    <div class="quality-warning-box" id="quality-warning-box"></div>
+
+    <!-- Detected furniture -->
+    <div>
+      <div class="section-title">Detected Furniture</div>
+      <div class="chips" id="furniture-chips"></div>
+    </div>
+
+    <!-- Style analysis -->
+    <div class="section-title">Style Analysis</div>
+    <div class="style-card">
+      <div class="meta">
+        <span class="badge" id="style-tag"></span>
+        <span class="badge mood" id="mood-tag"></span>
+      </div>
+      <div class="colors" id="colors-row"></div>
+      <div class="strengths" id="strengths-text"></div>
+      <div class="recs">
+        <strong style="font-size:0.85rem;color:#555;display:block;margin-bottom:0.5rem;">RECOMMENDATIONS</strong>
+        <ol id="recs-list"></ol>
+      </div>
+    </div>
+
+    <!-- Pinterest -->
+    <div class="section-title">Pinterest Inspiration</div>
+    <div class="pin-grid" id="pin-grid"></div>
+  </div>
+</div>
+
+<script>
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const previewWrap = document.getElementById('preview-wrap');
+  const previewImg = document.getElementById('preview-img');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const promptInput = document.getElementById('prompt-input');
+  const spinner = document.getElementById('spinner');
+  const results = document.getElementById('results');
+  const errorBox = document.getElementById('error-box');
+
+  let selectedFile = null;
+
+  // Color name → approximate CSS color (best-effort)
+  const COLOR_MAP = {
+    'white': '#ffffff', 'black': '#111111', 'grey': '#888888', 'gray': '#888888',
+    'beige': '#f0e6d3', 'cream': '#fffdd0', 'ivory': '#fffff0',
+    'brown': '#8b6043', 'wood': '#9b7653', 'tan': '#d2b48c',
+    'blue': '#4a7fc1', 'navy': '#1c2d5e', 'teal': '#008080', 'cyan': '#00bcd4',
+    'green': '#4caf50', 'sage': '#87a987', 'olive': '#808000',
+    'red': '#e53935', 'rust': '#b7410e', 'terracotta': '#c96b4a',
+    'orange': '#ff7043', 'peach': '#ffcba4',
+    'yellow': '#fdd835', 'gold': '#ffc107', 'mustard': '#e3a21a',
+    'pink': '#ec407a', 'blush': '#f4b8b0', 'mauve': '#c97b84',
+    'purple': '#7e57c2', 'lavender': '#9575cd', 'violet': '#7c4dff',
+    'charcoal': '#3e3e3e', 'taupe': '#8b8070',
+  };
+
+  function colorToCSS(name) {
+    const lower = name.toLowerCase();
+    for (const [key, val] of Object.entries(COLOR_MAP)) {
+      if (lower.includes(key)) return val;
+    }
+    return '#cccccc';
+  }
+
+  function setFile(file) {
+    if (!file) return;
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewWrap.style.display = 'block';
+    analyzeBtn.disabled = false;
+  }
+
+  fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    setFile(e.dataTransfer.files[0]);
+  });
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    // Reset UI
+    results.style.display = 'none';
+    errorBox.style.display = 'none';
+    spinner.style.display = 'block';
+    analyzeBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('prompt', promptInput.value.trim());
+
+    try {
+      const res = await fetch('/analyze', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || res.statusText);
+      }
+      const data = await res.json();
+      renderResults(data);
+    } catch (e) {
+      errorBox.textContent = 'Error: ' + e.message;
+      errorBox.style.display = 'block';
+    } finally {
+      spinner.style.display = 'none';
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  function renderResults(data) {
+    // Quality warnings
+    const qualityBox = document.getElementById('quality-warning-box');
+    const warnings = (data.quality && data.quality.warnings) || [];
+    if (warnings.length > 0) {
+      qualityBox.innerHTML = '<strong>Heads up about this photo:</strong><ul>' +
+        warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
+      qualityBox.style.display = 'block';
+    } else {
+      qualityBox.style.display = 'none';
+    }
+
+    // Furniture chips
+    const chipsEl = document.getElementById('furniture-chips');
+    chipsEl.innerHTML = '';
+    if (data.detected_furniture && data.detected_furniture.length > 0) {
+      data.detected_furniture.forEach(item => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `<span>${item.label}</span><span class="conf">${Math.round(item.confidence * 100)}%</span>`;
+        chipsEl.appendChild(chip);
+      });
+    } else {
+      chipsEl.innerHTML = '<span style="color:#999;font-size:0.9rem">No furniture detected</span>';
+    }
+
+    // Style card
+    const sa = data.style_analysis || {};
+    document.getElementById('style-tag').textContent = sa.style || '—';
+    document.getElementById('mood-tag').textContent = sa.mood || '—';
+
+    const colorsRow = document.getElementById('colors-row');
+    colorsRow.innerHTML = '';
+    (sa.color_palette || []).forEach(color => {
+      const sw = document.createElement('div');
+      sw.className = 'swatch';
+      sw.innerHTML = `<div class="swatch-dot" style="background:${colorToCSS(color)}"></div><span>${color}</span>`;
+      colorsRow.appendChild(sw);
+    });
+
+    document.getElementById('strengths-text').textContent = sa.existing_strengths || '';
+
+    const recsList = document.getElementById('recs-list');
+    recsList.innerHTML = '';
+    (sa.recommendations || []).forEach(rec => {
+      const li = document.createElement('li');
+      li.textContent = rec;
+      recsList.appendChild(li);
+    });
+
+    // Pinterest grid
+    const pinGrid = document.getElementById('pin-grid');
+    pinGrid.innerHTML = '';
+    if (data.pinterest_results && data.pinterest_results.length > 0) {
+      data.pinterest_results.forEach(pin => {
+        const card = document.createElement('a');
+        card.className = 'pin-card';
+        card.href = pin.pin_url;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        card.innerHTML = `
+          <img src="${pin.image_url}" alt="${pin.title}" loading="lazy" onerror="this.style.display='none'" />
+          <div class="pin-title">${pin.title}</div>
+        `;
+        pinGrid.appendChild(card);
+      });
+    } else {
+      pinGrid.innerHTML = '<p class="no-pins">No Pinterest results — configure PINTEREST_ACCESS_TOKEN in .env and save some pins to your account.</p>';
+    }
+
+    results.style.display = 'block';
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>

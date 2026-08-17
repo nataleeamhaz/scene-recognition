@@ -1,0 +1,16 @@
+# Environment variables — never commit secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# YOLO model weights (auto-downloaded)
+*.pt
+
+# macOS
+.DS_Store
