@@ -298,8 +298,9 @@
     'charcoal': '#3e3e3e', 'taupe': '#8b8070',
   };
 
-  function colorToCSS(name) {
-    const lower = name.toLowerCase();
+  function colorToCSS(color) {
+    if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+    const lower = color.toLowerCase();
     for (const [key, val] of Object.entries(COLOR_MAP)) {
       if (lower.includes(key)) return val;
     }

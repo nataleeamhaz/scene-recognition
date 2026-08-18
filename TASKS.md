@@ -28,34 +28,57 @@ PRD ask: "is it too blurry, what angles should I get."
 - [ ] Manual E2E in browser still needed (start `uvicorn main:app --reload`,
       upload a real blurry/dark/low-res photo, confirm the banner renders).
 
+## Done: CLIP/Haiku hybrid style analysis
+Replaced the single Claude Sonnet Vision call with a hybrid pipeline —
+resolves the open question from the previous entry (kept a small LLM call
+for the two fields CLIP can't produce, rather than templating them).
+
+- [x] `style_analysis.py` — CLIP (`openai/clip-vit-base-patch32` via
+      `transformers`) zero-shot classification for `style`/`mood`, k-means
+      (via `cv2.kmeans`, no new dependency) for `color_palette` as hex codes.
+- [x] `recommendations.py` — `claude-haiku-4-5`, text-only (no image), for
+      just `existing_strengths` + `recommendations` + `pinterest_search_terms`.
+      ~4x cheaper per call than the old full-vision Sonnet call (see cost
+      breakdown from the migration discussion — image removal + a smaller
+      output schema + a cheaper model tier all contributed).
+- [x] `main.py` rewired: preprocess → quality → YOLO → CLIP+k-means →
+      Haiku → Pinterest. `ANTHROPIC_API_KEY` is still needed (Haiku), just
+      no longer for vision.
+- [x] `static/index.html`'s `colorToCSS` updated — color palette entries are
+      now hex codes from k-means, not color-name strings.
+- [x] Unit tests: `tests/test_style_analysis.py` (`pick_best_label`,
+      `extract_color_palette`), `tests/test_recommendations.py`
+      (`build_prompt`). Full suite: 27/27 passing. Full `main.py` import
+      verified end-to-end (triggers CLIP checkpoint + YOLO weight download).
+- [ ] **Manual browser E2E still needed** — run `uvicorn main:app --reload`,
+      upload a real photo, confirm the full pipeline produces sane output.
+- [ ] **Deployment weight**: `torch` + `transformers` + the CLIP checkpoint
+      (~600MB) add real bulk (~2GB+ total with `ultralytics`/`torch`) to what
+      was a lightweight app — reconsider the Render free-tier plan (disk/RAM
+      limits, build time) before actually deploying.
+- [ ] **Deferred**: CLIP-based visual Pinterest matching (embed pin images,
+      rank by similarity to the room photo) — a real upgrade over today's
+      keyword search, but scoped out of this pass since it needs to fetch
+      and embed a dynamic image set per request.
+- [ ] Not yet committed to git.
+
 ## Backlog (rough priority order)
-2. **Migrate style analysis from Claude Vision to CLIP** — `main.py`'s
-   `claude_analyze()` currently calls Anthropic's Claude Vision to produce the
-   whole `style_analysis` JSON. Decision made: replace it with CLIP entirely.
-   - `style` / `mood` → zero-shot classification (cosine similarity between
-     image embedding and candidate label-text embeddings)
-   - `color_palette` → plain CV (k-means on pixels), not CLIP
-   - **Open question**: `recommendations` (5 actionable improvements) and
-     `existing_strengths` are generative text — CLIP can't produce these.
-     Need a decision: template/rule-based text from classification results,
-     or keep a small LLM call just for phrasing.
-   - Once migrated, `ANTHROPIC_API_KEY` / the `anthropic` dependency likely
-     go away entirely.
-3. **Small-space-aware recommendations** — nothing currently encodes room
+1. **Commit the CLIP/Haiku migration** — `style_analysis.py`,
+   `recommendations.py`, the `main.py` rewire, `requirements.txt`, and the
+   `static/index.html` hex-color fix are all local-only right now.
+2. **Small-space-aware recommendations** — nothing currently encodes room
    size/constraints; PRD specifically calls out small NY apartments.
-4. **Spatial furniture arrangement** — current output is prose recommendations,
+3. **Spatial furniture arrangement** — current output is prose recommendations,
    not an actual layout/arrangement suggestion. Stretch goal.
-5. **Pinterest curation** — trial-mode API only searches your own account's
+4. **Pinterest curation** — trial-mode API only searches your own account's
    saved pins (see `pinterest.py` docstring). Need to seed a board with ~20-30
    pins for results to actually be "curated" rather than empty.
-6. **Test suite** — no tests exist yet. Add pytest coverage per module as it's
-   touched: `preprocessing.py`, `feature_extraction.py`, `pinterest.py`, and
-   whatever replaces `claude_analyze()` after the CLIP migration.
-7. **Dead code cleanup** — `preprocessing.py` still defines its own `FastAPI()`
+5. **`feature_extraction.py` has no tests** — the one module left without
+   coverage (matches the existing pattern of not unit-testing model-loading
+   integration code, but worth a second look — e.g. testing the dedup-by-
+   confidence logic with a mocked YOLO result).
+6. **Dead code cleanup** — `preprocessing.py` still defines its own `FastAPI()`
    app and `/upload` route, disconnected from `main.py`'s real app. Remove.
-8. **Commit current work** — `main.py`, `feature_extraction.py`, `pinterest.py`,
-   `static/`, `requirements.txt` are untracked; only `preprocessing.py` has a
-   pending diff.
 
 ## Testing approach
 - Unit-test each new function in isolation (no network/model calls) before
