@@ -4,9 +4,6 @@ Accepts user images and preprocess
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, UploadFile
-
-app = FastAPI()
 
 
 def convert_to_cv2_image(image_bytes: bytes) -> np.ndarray:
@@ -87,10 +84,3 @@ def cv2_to_bytes(cv2_image: np.ndarray) -> bytes:
     if not success:
         raise ValueError("Failed to encode image to JPEG")
     return buffer.tobytes()
-
-
-@app.post("/upload")
-async def uploadImage(image: UploadFile):
-    image_bytes = await image.read()
-    image = convert_to_cv2_image(image_bytes)
-    return {"received_image": "success"}

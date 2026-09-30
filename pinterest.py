@@ -21,7 +21,9 @@ PINTEREST_OAUTH_AUTHORIZE_URL = "https://www.pinterest.com/oauth/"
 PINTEREST_OAUTH_TOKEN_URL = f"{PINTEREST_API_BASE}/oauth/token"
 
 
-def build_authorization_url(scope: str = "boards:read,pins:read", state: str = "") -> str:
+def build_authorization_url(
+    scope: str = "boards:read,pins:read,boards:read_secret,pins:read_secret", state: str = ""
+) -> str:
     """
     Build the Pinterest OAuth authorization URL to redirect a user to.
     They approve access there, then Pinterest redirects back to
@@ -64,6 +66,28 @@ def exchange_code_for_token(code: str) -> dict:
     return response.json()
 
 
+def _parse_pin_item(item: dict, fallback_title: str = "") -> dict:
+    """Shared parsing for a Pinterest API pin item into {title, image_url, pin_url}."""
+    media = item.get("media", {})
+    images = media.get("images", {})
+    # prefer 400x300, fall back to any available size
+    image_url = ""
+    for size_key in ("400x300", "600x", "150x150"):
+        if size_key in images:
+            image_url = images[size_key].get("url", "")
+            break
+    if not image_url:
+        url_dict = next(iter(images.values()), {})
+        image_url = url_dict.get("url", "")
+
+    pin_id = item.get("id", "")
+    return {
+        "title": item.get("title") or item.get("description") or fallback_title,
+        "image_url": image_url,
+        "pin_url": f"https://www.pinterest.com/pin/{pin_id}/",
+    }
+
+
 def search_pins(query: str, limit: int = 6) -> list[dict]:
     """
     Search Pinterest pins for the given query.
@@ -85,29 +109,63 @@ def search_pins(query: str, limit: int = 6) -> list[dict]:
     except Exception:
         return []
 
-    pins = []
-    for item in data.get("items", []):
-        media = item.get("media", {})
-        images = media.get("images", {})
-        # prefer 400x300, fall back to any available size
-        image_url = ""
-        for size_key in ("400x300", "600x", "150x150"):
-            if size_key in images:
-                image_url = images[size_key].get("url", "")
-                break
-        if not image_url:
-            url_dict = next(iter(images.values()), {})
-            image_url = url_dict.get("url", "")
+    return [_parse_pin_item(item, fallback_title=query) for item in data.get("items", [])]
 
-        pin_id = item.get("id", "")
-        pins.append(
-            {
-                "title": item.get("title") or item.get("description") or query,
-                "image_url": image_url,
-                "pin_url": f"https://www.pinterest.com/pin/{pin_id}/",
-            }
+
+def list_boards() -> list[dict]:
+    """
+    List the authenticated account's own boards (requires boards:read scope).
+    Returns a list of dicts with keys: id, name, pin_count.
+    Returns [] gracefully if Pinterest is unavailable or unconfigured.
+    """
+    if not PINTEREST_ACCESS_TOKEN:
+        return []
+
+    try:
+        response = requests.get(
+            f"{PINTEREST_API_BASE}/boards",
+            headers={"Authorization": f"Bearer {PINTEREST_ACCESS_TOKEN}"},
+            params={"page_size": 25},
+            timeout=10,
         )
-    return pins
+        response.raise_for_status()
+        data = response.json()
+    except Exception:
+        return []
+
+    return [
+        {
+            "id": board.get("id", ""),
+            "name": board.get("name", ""),
+            "pin_count": board.get("pin_count", 0),
+        }
+        for board in data.get("items", [])
+    ]
+
+
+def get_board_pins(board_id: str, limit: int = 12) -> list[dict]:
+    """
+    Fetch pins belonging to one of the authenticated account's own boards.
+    Returns a list of dicts with keys: title, image_url, pin_url.
+    Returns [] gracefully if Pinterest is unavailable, unconfigured, or the
+    board_id is invalid.
+    """
+    if not PINTEREST_ACCESS_TOKEN or not board_id:
+        return []
+
+    try:
+        response = requests.get(
+            f"{PINTEREST_API_BASE}/boards/{board_id}/pins",
+            headers={"Authorization": f"Bearer {PINTEREST_ACCESS_TOKEN}"},
+            params={"page_size": limit},
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except Exception:
+        return []
+
+    return [_parse_pin_item(item) for item in data.get("items", [])]
 
 
 def search_multiple_terms(terms: list[str], pins_per_term: int = 3) -> list[dict]:

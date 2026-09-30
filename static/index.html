@@ -4,209 +4,346 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Room Design Recommender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
   <style>
+    :root {
+      --bg: #faf7f2;
+      --surface: #ffffff;
+      --border: #e7e1d6;
+      --border-soft: #efe9dd;
+      --text: #262320;
+      --text-muted: #6f6a62;
+      --text-faint: #a29c91;
+      --accent: #2f5d47;
+      --accent-strong: #234636;
+      --accent-soft: #e4ede8;
+      --accent-2: #a8672f;
+      --accent-2-soft: #f4e8db;
+      --error: #a83e34;
+      --error-bg: #fbeeec;
+      --error-border: #edcac4;
+      --warn: #8a6a1f;
+      --warn-bg: #fbf3e0;
+      --warn-border: #edda9f;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 7px;
+      --shadow-card: 0 1px 2px rgba(38, 35, 32, 0.04), 0 1px 14px rgba(38, 35, 32, 0.045);
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f5f4f0;
-      color: #1a1a1a;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 2rem 1rem;
+      padding: 3.5rem 1.25rem 5rem;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .container { max-width: 860px; margin: 0 auto; }
+    .container { max-width: 720px; margin: 0 auto; }
+
+    header.page-head { margin-bottom: 2.75rem; }
+
+    .kicker {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.85rem;
+    }
 
     h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 0.25rem;
+      font-family: "Fraunces", Georgia, "Iowan Old Style", serif;
+      font-weight: 560;
+      font-size: 2.15rem;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+      margin-bottom: 0.6rem;
     }
-    .subtitle { color: #666; margin-bottom: 2rem; font-size: 0.95rem; }
+
+    .subtitle { color: var(--text-muted); font-size: 1rem; line-height: 1.55; max-width: 46ch; }
 
     /* Upload zone */
     .upload-zone {
-      border: 2px dashed #ccc;
-      border-radius: 12px;
-      padding: 2.5rem;
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.75rem 2rem;
       text-align: center;
       cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      background: #fff;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      background: var(--surface);
       position: relative;
     }
-    .upload-zone.dragover { border-color: #5b4cdb; background: #f0eeff; }
+    .upload-zone:hover { border-color: #cfc6b4; }
+    .upload-zone.dragover { border-color: var(--accent); background: var(--accent-soft); }
     .upload-zone input[type="file"] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .upload-zone p { color: #888; font-size: 0.9rem; }
+    .upload-icon {
+      width: 40px; height: 40px; margin: 0 auto 0.9rem;
+      color: var(--text-faint);
+    }
+    .upload-zone p.primary { color: var(--text); font-size: 0.95rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .upload-zone p.secondary { color: var(--text-faint); font-size: 0.8rem; }
 
-    #preview-wrap { margin-top: 1rem; display: none; }
+    #preview-wrap { margin-top: 1.25rem; display: none; }
     #preview-wrap img {
-      max-height: 280px; max-width: 100%; border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      max-height: 300px; max-width: 100%; border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      display: block;
     }
 
     /* Prompt + button */
-    .prompt-row { margin-top: 1.25rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+    .prompt-row { margin-top: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+    textarea, select, input[type="text"] {
+      font-family: inherit;
+      color: var(--text);
+    }
     textarea {
       flex: 1;
-      padding: 0.75rem 1rem;
-      border: 1.5px solid #ddd;
-      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
       font-size: 0.95rem;
       resize: vertical;
-      min-height: 60px;
-      font-family: inherit;
-      transition: border-color 0.2s;
+      min-height: 64px;
+      background: var(--surface);
+      transition: border-color 0.15s ease;
     }
-    textarea:focus { outline: none; border-color: #5b4cdb; }
+    textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+
+    .board-row {
+      margin-top: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .board-row select, .room-type-row select {
+      padding: 0.45rem 0.65rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      background: var(--surface);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+    }
 
     button#analyze-btn {
-      padding: 0.75rem 1.5rem;
-      background: #5b4cdb;
+      padding: 0.85rem 1.6rem;
+      background: var(--accent);
       color: #fff;
-      border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       font-size: 0.95rem;
       font-weight: 600;
-      cursor: pointer;
       white-space: nowrap;
-      transition: background 0.2s, opacity 0.2s;
+      transition: background 0.15s ease, transform 0.1s ease;
     }
-    button#analyze-btn:hover { background: #4a3cc7; }
-    button#analyze-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    button#analyze-btn:hover:not(:disabled) { background: var(--accent-strong); }
+    button#analyze-btn:active:not(:disabled) { transform: translateY(1px); }
+    button#analyze-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* Spinner */
-    .spinner {
-      display: none;
-      margin: 2rem auto;
-      width: 40px; height: 40px;
-      border: 4px solid #e0e0e0;
-      border-top-color: #5b4cdb;
+    .spinner-wrap { display: none; text-align: center; padding: 2.5rem 0; }
+    .spinner-ring {
+      margin: 0 auto 0.9rem;
+      width: 30px; height: 30px;
+      border: 3px solid var(--border-soft);
+      border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.85s linear infinite;
     }
+    .spinner-wrap p { color: var(--text-faint); font-size: 0.85rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Results */
-    #results { margin-top: 2.5rem; display: none; }
+    #results { margin-top: 3rem; display: none; }
 
     .section-title {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 0.72rem;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #888;
-      margin-bottom: 0.75rem;
+      letter-spacing: 0.12em;
+      color: var(--text-faint);
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border-soft);
     }
 
+    section + section, #results > div + div { margin-top: 2.25rem; }
+
     /* Furniture chips */
-    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.75rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .chip {
-      background: #fff;
-      border: 1.5px solid #e0e0e0;
+      background: var(--surface);
+      border: 1.5px solid var(--border-soft);
       border-radius: 20px;
-      padding: 0.3rem 0.8rem;
-      font-size: 0.85rem;
+      padding: 0.32rem 0.85rem;
+      font-size: 0.83rem;
+      color: var(--text-muted);
       display: flex; align-items: center; gap: 0.4rem;
-    }
-    .chip .conf {
-      background: #5b4cdb20;
-      color: #5b4cdb;
-      border-radius: 10px;
-      padding: 0.1rem 0.4rem;
-      font-size: 0.75rem;
-      font-weight: 600;
     }
 
     /* Style card */
     .style-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.75rem;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem;
+      box-shadow: var(--shadow-card);
     }
-    .style-card .meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .style-card .meta { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
     .badge {
-      background: #5b4cdb;
-      color: #fff;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
       border-radius: 20px;
-      padding: 0.25rem 0.75rem;
-      font-size: 0.82rem;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
       text-transform: capitalize;
     }
-    .badge.mood { background: #2bab6f; }
+    .badge.mood { background: var(--accent-2-soft); color: var(--accent-2); }
 
-    .colors { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .colors { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
     .swatch {
       display: flex; align-items: center; gap: 0.4rem;
-      font-size: 0.82rem; color: #555;
+      font-size: 0.8rem; color: var(--text-muted);
     }
     .swatch-dot {
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 1px solid #ddd;
+      width: 17px; height: 17px; border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.08);
       flex-shrink: 0;
     }
 
     .strengths {
-      font-size: 0.9rem; color: #444; margin-bottom: 1rem;
-      padding: 0.75rem 1rem;
-      background: #f9f9f9;
-      border-radius: 8px;
-      border-left: 3px solid #5b4cdb;
+      font-size: 0.92rem; color: var(--text);
+      padding: 0.9rem 1.1rem;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      border-left: 2.5px solid var(--accent);
+      line-height: 1.55;
     }
 
-    .recs ol { padding-left: 1.25rem; }
-    .recs li { font-size: 0.9rem; color: #333; margin-bottom: 0.4rem; line-height: 1.5; }
+    /* Recommendations */
+    .recs-list { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; counter-reset: rec; }
+    .recs-list li {
+      counter-increment: rec;
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.1rem 0.85rem 3.1rem;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .recs-list li::before {
+      content: counter(rec);
+      position: absolute;
+      left: 0.85rem; top: 0.85rem;
+      width: 1.5rem; height: 1.5rem;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 0.78rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
 
     /* Pinterest grid */
     .pin-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 0.9rem;
     }
     .pin-card {
-      background: #fff;
-      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
       overflow: hidden;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
       text-decoration: none;
       color: inherit;
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
       display: block;
     }
-    .pin-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
+    .pin-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
     .pin-card img { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; }
     .pin-card .pin-title {
       padding: 0.6rem 0.75rem;
       font-size: 0.8rem;
-      color: #555;
+      color: var(--text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .no-pins { color: #999; font-size: 0.9rem; }
+    .no-pins, .no-photo-yet { color: var(--text-faint); font-size: 0.9rem; }
+
+    /* Final photo */
+    .final-photo-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem;
+      box-shadow: var(--shadow-card);
+    }
+    .room-type-row {
+      display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+      margin-bottom: 1.1rem;
+    }
+    .room-type-row label { font-size: 0.85rem; color: var(--text-muted); }
+    button#generate-photo-btn {
+      padding: 0.7rem 1.3rem;
+      background: var(--accent-2);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: background 0.15s ease;
+    }
+    button#generate-photo-btn:hover:not(:disabled) { background: #8f551f; }
+    button#generate-photo-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .final-photo-disclosure {
+      font-size: 0.78rem; color: var(--text-faint); line-height: 1.5;
+      margin-bottom: 1.1rem;
+    }
+    .final-photo-result img {
+      width: 100%; border-radius: var(--radius-md);
+      display: block;
+    }
+    .final-photo-caption {
+      font-size: 0.78rem; color: var(--text-faint); margin-top: 0.6rem;
+    }
+    .photo-spinner-wrap { display: none; text-align: center; padding: 1.5rem 0; }
+    .photo-spinner-wrap .spinner-ring { border-top-color: var(--accent-2); }
+    .photo-spinner-wrap p { color: var(--text-faint); font-size: 0.85rem; }
 
     /* Error */
     .error-box {
-      background: #fff0f0; border: 1.5px solid #f5c0c0;
-      border-radius: 8px; padding: 1rem 1.25rem;
-      color: #c0392b; font-size: 0.9rem; margin-top: 1.5rem;
+      background: var(--error-bg); border: 1.5px solid var(--error-border);
+      border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+      color: var(--error); font-size: 0.9rem; margin-top: 1.5rem;
       display: none;
     }
 
     /* Quality warnings */
     .quality-warning-box {
-      background: #fffaf0; border: 1.5px solid #f0dca0;
-      border-radius: 8px; padding: 1rem 1.25rem;
-      color: #8a6d1f; font-size: 0.9rem; margin-bottom: 1.75rem;
+      background: var(--warn-bg); border: 1.5px solid var(--warn-border);
+      border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+      color: var(--warn); font-size: 0.9rem;
       display: none;
     }
     .quality-warning-box ul { padding-left: 1.25rem; margin-top: 0.4rem; }
@@ -215,15 +352,22 @@
 </head>
 <body>
 <div class="container">
-  <h1>Room Design Recommender</h1>
-  <p class="subtitle">Upload a photo of your room and describe your design goal to get AI-powered recommendations.</p>
+  <header class="page-head">
+    <div class="kicker">Room Design Recommender</div>
+    <h1>See your room, thoughtfully redesigned.</h1>
+    <p class="subtitle">Upload a photo and a design goal — get grounded, specific recommendations and matching inspiration, drawn from what's actually in your room.</p>
+  </header>
 
   <!-- Upload -->
   <div class="upload-zone" id="drop-zone">
     <input type="file" id="file-input" accept="image/*" />
-    <div class="upload-icon">🏠</div>
-    <p><strong>Drop an image here</strong> or click to browse</p>
-    <p>JPG, PNG, WEBP supported</p>
+    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 16.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5" />
+      <path d="M7.5 9 12 4.5 16.5 9" />
+      <path d="M12 4.5V16" />
+    </svg>
+    <p class="primary">Drop a photo here, or click to browse</p>
+    <p class="secondary">JPG, PNG, or WEBP</p>
   </div>
   <div id="preview-wrap">
     <img id="preview-img" src="" alt="Preview" />
@@ -235,7 +379,18 @@
     <button id="analyze-btn" disabled>Analyze</button>
   </div>
 
-  <div class="spinner" id="spinner"></div>
+  <!-- Inspiration source -->
+  <div class="board-row" id="board-row" style="display:none;">
+    <label for="board-select">Inspiration board (optional):</label>
+    <select id="board-select">
+      <option value="">Auto (search by style)</option>
+    </select>
+  </div>
+
+  <div class="spinner-wrap" id="spinner">
+    <div class="spinner-ring"></div>
+    <p>Analyzing your room…</p>
+  </div>
   <div class="error-box" id="error-box"></div>
 
   <!-- Results -->
@@ -250,23 +405,50 @@
     </div>
 
     <!-- Style analysis -->
-    <div class="section-title">Style Analysis</div>
-    <div class="style-card">
-      <div class="meta">
-        <span class="badge" id="style-tag"></span>
-        <span class="badge mood" id="mood-tag"></span>
-      </div>
-      <div class="colors" id="colors-row"></div>
-      <div class="strengths" id="strengths-text"></div>
-      <div class="recs">
-        <strong style="font-size:0.85rem;color:#555;display:block;margin-bottom:0.5rem;">RECOMMENDATIONS</strong>
-        <ol id="recs-list"></ol>
+    <div>
+      <div class="section-title">Style Analysis</div>
+      <div class="style-card">
+        <div class="meta">
+          <span class="badge" id="style-tag"></span>
+          <span class="badge mood" id="mood-tag"></span>
+        </div>
+        <div class="colors" id="colors-row"></div>
+        <div class="strengths" id="strengths-text"></div>
       </div>
     </div>
 
     <!-- Pinterest -->
-    <div class="section-title">Pinterest Inspiration</div>
-    <div class="pin-grid" id="pin-grid"></div>
+    <div>
+      <div class="section-title">Pinterest Inspiration</div>
+      <div class="pin-grid" id="pin-grid"></div>
+    </div>
+
+    <!-- Recommendations -->
+    <div>
+      <div class="section-title">Recommendations</div>
+      <ol class="recs-list" id="recs-list"></ol>
+    </div>
+
+    <!-- Final photo generation -->
+    <div>
+      <div class="section-title">See It Applied</div>
+      <div class="final-photo-card">
+        <p class="final-photo-disclosure">
+          Generates an AI-rendered approximation of your room in the style below — a visual guide, not a guaranteed outcome. Takes about 10–30 seconds.
+        </p>
+        <div class="room-type-row">
+          <label for="room-type-select">Room type:</label>
+          <select id="room-type-select"></select>
+          <button id="generate-photo-btn">Generate final photo</button>
+        </div>
+        <div class="photo-spinner-wrap" id="photo-spinner">
+          <div class="spinner-ring"></div>
+          <p>Rendering your redesigned room…</p>
+        </div>
+        <div class="error-box" id="photo-error-box"></div>
+        <div class="final-photo-result" id="final-photo-result"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -281,7 +463,46 @@
   const results = document.getElementById('results');
   const errorBox = document.getElementById('error-box');
 
+  const boardRow = document.getElementById('board-row');
+  const boardSelect = document.getElementById('board-select');
+
+  const roomTypeSelect = document.getElementById('room-type-select');
+  const generatePhotoBtn = document.getElementById('generate-photo-btn');
+  const photoSpinner = document.getElementById('photo-spinner');
+  const photoErrorBox = document.getElementById('photo-error-box');
+  const finalPhotoResult = document.getElementById('final-photo-result');
+
   let selectedFile = null;
+  let lastStyle = '';
+
+  // Populate the inspiration-board picker, if the configured account has boards
+  fetch('/pinterest/boards')
+    .then(res => res.json())
+    .then(data => {
+      const boards = data.boards || [];
+      if (boards.length === 0) return;
+      boards.forEach(board => {
+        const opt = document.createElement('option');
+        opt.value = board.id;
+        opt.textContent = `${board.name} (${board.pin_count} pins)`;
+        boardSelect.appendChild(opt);
+      });
+      boardRow.style.display = 'flex';
+    })
+    .catch(() => {});
+
+  // Populate the room-type picker for final-photo generation
+  fetch('/room-types')
+    .then(res => res.json())
+    .then(data => {
+      (data.room_types || []).forEach(rt => {
+        const opt = document.createElement('option');
+        opt.value = rt;
+        opt.textContent = rt.replace(/([a-z])([A-Z])/g, '$1 $2');
+        roomTypeSelect.appendChild(opt);
+      });
+    })
+    .catch(() => {});
 
   // Color name → approximate CSS color (best-effort)
   const COLOR_MAP = {
@@ -332,12 +553,15 @@
     // Reset UI
     results.style.display = 'none';
     errorBox.style.display = 'none';
+    finalPhotoResult.innerHTML = '';
+    photoErrorBox.style.display = 'none';
     spinner.style.display = 'block';
     analyzeBtn.disabled = true;
 
     const formData = new FormData();
     formData.append('image', selectedFile);
     formData.append('prompt', promptInput.value.trim());
+    formData.append('board_id', boardSelect.value);
 
     try {
       const res = await fetch('/analyze', { method: 'POST', body: formData });
@@ -353,6 +577,43 @@
     } finally {
       spinner.style.display = 'none';
       analyzeBtn.disabled = false;
+    }
+  });
+
+  generatePhotoBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    finalPhotoResult.innerHTML = '';
+    photoErrorBox.style.display = 'none';
+    photoSpinner.style.display = 'block';
+    generatePhotoBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('style', lastStyle);
+    formData.append('room_type', roomTypeSelect.value);
+
+    try {
+      const res = await fetch('/generate-photo', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || res.statusText);
+      }
+      const data = await res.json();
+      const images = data.images || [];
+      if (images.length === 0) {
+        finalPhotoResult.innerHTML = '<p class="no-photo-yet">No result — photo generation may not be configured yet.</p>';
+      } else {
+        finalPhotoResult.innerHTML = images.map(img => `
+          <img src="${img.url}" alt="AI-rendered redesign of your room" loading="lazy" />
+        `).join('') + '<p class="final-photo-caption">AI-generated rendering — treat as a visual direction, not a precise plan.</p>';
+      }
+    } catch (e) {
+      photoErrorBox.textContent = 'Error: ' + e.message;
+      photoErrorBox.style.display = 'block';
+    } finally {
+      photoSpinner.style.display = 'none';
+      generatePhotoBtn.disabled = false;
     }
   });
 
@@ -375,17 +636,18 @@
       data.detected_furniture.forEach(item => {
         const chip = document.createElement('div');
         chip.className = 'chip';
-        chip.innerHTML = `<span>${item.label}</span><span class="conf">${Math.round(item.confidence * 100)}%</span>`;
+        chip.innerHTML = `<span>${item.label}</span>`;
         chipsEl.appendChild(chip);
       });
     } else {
-      chipsEl.innerHTML = '<span style="color:#999;font-size:0.9rem">No furniture detected</span>';
+      chipsEl.innerHTML = '<span style="color:var(--text-faint);font-size:0.9rem">No furniture detected</span>';
     }
 
     // Style card
     const sa = data.style_analysis || {};
     document.getElementById('style-tag').textContent = sa.style || '—';
     document.getElementById('mood-tag').textContent = sa.mood || '—';
+    lastStyle = sa.style || '';
 
     const colorsRow = document.getElementById('colors-row');
     colorsRow.innerHTML = '';
@@ -400,9 +662,10 @@
 
     const recsList = document.getElementById('recs-list');
     recsList.innerHTML = '';
-    (sa.recommendations || []).forEach(rec => {
+    const recs = (sa.recommendations || []).slice().sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+    recs.forEach(rec => {
       const li = document.createElement('li');
-      li.textContent = rec;
+      li.textContent = rec.text;
       recsList.appendChild(li);
     });
 
@@ -425,6 +688,9 @@
     } else {
       pinGrid.innerHTML = '<p class="no-pins">No Pinterest results — configure PINTEREST_ACCESS_TOKEN in .env and save some pins to your account.</p>';
     }
+
+    finalPhotoResult.innerHTML = '';
+    photoErrorBox.style.display = 'none';
 
     results.style.display = 'block';
     results.scrollIntoView({ behavior: 'smooth', block: 'start' });

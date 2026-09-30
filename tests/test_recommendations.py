@@ -24,6 +24,8 @@ def test_build_prompt_handles_no_furniture():
     assert "general room improvement" in prompt
 
 
-def test_build_prompt_requests_exactly_five_recommendations():
+def test_build_prompt_requests_ranked_recommendations():
     prompt = build_prompt(style="modern", mood="calm", colors=["#000000"], furniture=[], user_prompt="")
-    assert "exactly 5 strings" in prompt
+    assert "exactly 5 objects" in prompt
+    assert "'rank'" in prompt
+    assert "'text'" in prompt
