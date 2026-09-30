@@ -50,3 +50,37 @@ def test_search_multiple_terms_caps_at_three_terms(monkeypatch):
     monkeypatch.setattr(pinterest, "search_pins", fake_search_pins)
     pinterest.search_multiple_terms(["a", "b", "c", "d", "e"])
     assert calls == ["a", "b", "c"]
+
+
+def test_list_boards_returns_empty_without_token(monkeypatch):
+    monkeypatch.setattr(pinterest, "PINTEREST_ACCESS_TOKEN", "")
+    assert pinterest.list_boards() == []
+
+
+def test_get_board_pins_returns_empty_without_token(monkeypatch):
+    monkeypatch.setattr(pinterest, "PINTEREST_ACCESS_TOKEN", "")
+    assert pinterest.get_board_pins("some-board-id") == []
+
+
+def test_get_board_pins_returns_empty_without_board_id(monkeypatch):
+    monkeypatch.setattr(pinterest, "PINTEREST_ACCESS_TOKEN", "test-token")
+    assert pinterest.get_board_pins("") == []
+
+
+def test_parse_pin_item_prefers_400x300_image():
+    item = {
+        "id": "123",
+        "title": "Cozy nook",
+        "media": {"images": {"150x150": {"url": "small.jpg"}, "400x300": {"url": "medium.jpg"}}},
+    }
+    pin = pinterest._parse_pin_item(item)
+    assert pin["title"] == "Cozy nook"
+    assert pin["image_url"] == "medium.jpg"
+    assert pin["pin_url"] == "https://www.pinterest.com/pin/123/"
+
+
+def test_parse_pin_item_falls_back_to_any_available_image():
+    item = {"id": "456", "media": {"images": {"1200x": {"url": "large.jpg"}}}}
+    pin = pinterest._parse_pin_item(item, fallback_title="cozy modern")
+    assert pin["image_url"] == "large.jpg"
+    assert pin["title"] == "cozy modern"
